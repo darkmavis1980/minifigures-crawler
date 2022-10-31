@@ -1,4 +1,6 @@
 import scrapy
+import requests
+import os
 
 class BrickSetSpider(scrapy.Spider):
     name = "brickset_spider"
@@ -32,6 +34,23 @@ class BrickSetSpider(scrapy.Spider):
             NAME_SELECTOR = 'h1 a::text'
             name = brickset.css(NAME_SELECTOR).get()
             if not name.startswith(' LEGO Minifigures'):
+                image = brickset.css('.mainimg img').attrib['src']
+                tags = brickset.css('.col .tags a::text').get()
+                series = brickset.css('.meta .tags .subtheme::text').get()
+
+                imageFileName = image.split('?')[0].split('/')[-1]
+                imageDir = "images/{}".format(series)
+                imageRequest = requests.get(image)
+
+                if not os.path.exists(imageDir):
+                    os.makedirs(imageDir)
+
+                with open("{}/{}-{}".format(imageDir, tags, imageFileName), 'wb') as f:
+                    f.write(imageRequest.content)
                 yield {
                     'name': name,
+                    'image': image,
+                    'imageFileName': imageFileName,
+                    'tags': tags,
+                    'series': series
                 }
